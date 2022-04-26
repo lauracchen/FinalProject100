@@ -14,6 +14,12 @@ a = "MISR_agb_estimates_20002021.tif"
 o10 = "own2010.tif"
 o17 = "forest_own1.tif"
 anepa = "Activity_Project_Areas_NEPA_(Feature_Layer).geojson"
+atsale = "Activity_Project_Areas_Timber_Sale_(Feature_Layer).geojson"
+pcoll = "Collaborative_Forest_Landscape_Restoration_Program%3A_Point_(Feature_Layer).geojson"
+thaz = "Hazardous_Fuel_Treatment_Reduction%3A_Polygon_(Feature_Layer).geojson"
+ahfra = "Healthy_Forest_Restoration_Act_Activities_(Feature_Layer).geojson"
+irange = "Range_Vegetation_Improvement_(Feature_Layer).geojson"
+nsilvi = "Silviculture_Reforestation_Needs_(Feature_Layer).geojson"
 #o20 = "Public and Private Forest Ownership Conterminous United States (Image Service).tiff"
 
 #agb_data <- stack(x) #GDALinfo(y)
@@ -22,6 +28,12 @@ agb_17 <- raster(a, band = 18)
 own_10 <- raster(o10)
 own_17 <- raster(o17)
 nepa <- st_read(anepa)
+tsale <- st_read(atsale)
+coll <- st_read(pcoll)
+haz <- st_read(thaz)
+hfra <- st_read(ahfra)
+rangi <- st_read(irange)
+silvi <- st_read(nsilvi)
 
 #PREP AGB DATA
 #Calculate percent change
@@ -70,10 +82,28 @@ plot(ot17,col=pal(3), main ="Ownership 2017")
 # intersect geometry w raster
 #extract
 
-#filter only 2010-2017
+#filter only 2010-2016 + need region  #back 1 year
 nepa$NEPA_SIGNED_DATE <- as.Date(nepa$NEPA_SIGNED_DATE)
-nepa1017<-filter(nepa,NEPA_SIGNED_DATE>"2010-01-01"&NEPA_SIGNED_DATE<"2018-01-01")
+nepa1017<-filter(nepa,NEPA_SIGNED_DATE>"2010-01-01"&NEPA_SIGNED_DATE<"2017-01-01")
 
+tsale1017<-filter(tsale,FY_AWARD>"2010-01-01"&FY_AWARD<"2017-01-01") 
+
+coll1017<-filter(coll,FY_COMPLETED>"2010-01-01"&FY_COMPLETED<"2017-01-01")
+
+haz1017<-filter(haz,FISCAL_YEAR_COMPLETED>"2010-01-01"&FISCAL_YEAR_COMPLETED<"2017-01-01")
+
+hfra$LATEST_REVISION_DATE <- as.Date(hfra$LATEST_REVISION_DATE)
+hfra1017<-filter(hfra,LATEST_REVISION_DATE>"2010-01-01"&LATEST_REVISION_DATE<"2017-01-01")
+
+rangi$DATE_COMPLETED <- as.Date(rangi$DATE_COMPLETED)
+rangi1017<-filter(rangi,DATE_COMPLETED>"2010-01-01"&DATE_COMPLETED<"2017-01-01")
+rangi3 <- filter(rangi1017,ADMIN_REGION_CODE=="03")
+
+silvi1017<-filter(silvi,FY_PLANNED>"2010"&FY_PLANNED<"2016")
+silvi3 <- filter(silvi1017,REGION_CODE=="03")
+#JOIN ALL TO OWNERSHIP FEATURE CLASS
+#CREATE REGRESSION USING RF
+#GENERATE FUTURE SCENARIO PREDICTIONS
 
 
 
