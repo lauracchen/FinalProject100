@@ -8,6 +8,8 @@ library(raster) # package for raster manipulation
 library(sf) # package for geospatial df manipulation
 library(geojsonR) #package for geoJSON
 library(dplyr) #for data manipulation
+library(exactextractr)
+library(tictoc)
 #set wd
 setwd("~/1.00/finalproject_100/")
 
@@ -45,7 +47,7 @@ perc_chng <- (agb_17-agb_10m)/agb_10m
 change <- calc(perc_chng,fun = function(x) {x[x==Inf]<- NA; return(x)})
 
 #Crop AGB data
-change<-crop(change,extent(-1500000,-1000000,1100000,1550000))
+change<-crop(change,extent(-1500000,-1150000,1170000,1500000))
 
 #Transform to level 1, 2, 3 [decreasing, stable, increasing AGB]
 change <- calc(change,fun = function(x) {x[x>=0.05]<- 3; return(x)})
@@ -57,37 +59,32 @@ par(mar = c(1, 1, 1, 1))
 pal <- colorRampPalette(c("red","green"))
 plot(change,col=pal(3), main ="Aboveground Biomass Change 2010-2017")
 
+
 #PREP OWNERSHIP DATA
 # Crop and resample extents to match + remove NAs
-changec <- projectRaster(own_10,crs = crs(change))
-#own17cr <- projectRaster(own_17,crs = crs(change))
-own10c <- crop(changec, extent(change),snap="in")
-#own17c <- crop(own17cr,extent(change),snap="in")
+own10c <- crop(own_10, extent(-1500000,-1150000,1170000,1500000))
+own10c <- projectRaster(own10c,crs = crs(change))
+compareCRS(crs(own10c),crs(change))
+##own17cr <- projectRaster(own_17,crs = crs(change))
+##own17c <- crop(own17cr,extent(change),snap="in")
 
-#getting messed up here
-#own17c <- crop(own_17, extent(change),snap="in")
-extent(own10c)
-extent(own17c)
-#made same extent but didn't graph correctly
-own17r <- raster::resample(own_17,own10c,method="bilinear")
-extent(own17c)==extent(own10c)
-extent(own17r)
-own_10m <- mask(own10c,own17r)
+#2017 data getting messed up here, made same extent but didn't graph correctly
+##own17c <- crop(own_17, extent(change),snap="in")
+##own17r <- raster::resample(own_17,own10c,method="bilinear")
+##own_10m <- mask(own10c,own17r)
 
-compareCRS(crs(own10c),crs(changec))
 #establish dummy var. - 0 = public; 1 = private
 ot10 <- calc(own10c,fun = function(x) {x[x<9] <- NA; return(x)}) #non-forest
 ot10 <- calc(ot10,fun = function(x) {x[x>=9&x<=19] <- 1; return(x)}) #private
 ot10 <- calc(ot10,fun = function(x) {x[x>19] <- 0; return(x)}) #public
 
-#ot17 <- calc(own17r,fun = function(x) {x[x<=4]<- 1; return(x)}) #private
-#ot17 <- calc(ot17,fun = function(x) {x[x>=5&x<=7] <- 0; return(x)}) #public
-#ot17 <- calc(ot17,fun = function(x) {x[x>7] <- NA; return(x)}) #exclude tribes
+##ot17 <- calc(own17r,fun = function(x) {x[x<=4]<- 1; return(x)}) #private
+##ot17 <- calc(ot17,fun = function(x) {x[x>=5&x<=7] <- 0; return(x)}) #public
+##ot17 <- calc(ot17,fun = function(x) {x[x>7] <- NA; return(x)}) #exclude tribes
 
-ot_10<-crop(ot10,extent(-1500000,-1000000,1100000,1550000))
 par(mar = c(1, 1, 1, 1))
 pal2 <- colorRampPalette(c("blue","red"))
-plot(ot_10,col=pal2(5), main ="Ownership 2010")
+plot(ot10,col=pal2(5), main ="Ownership 2010")
 ##make those that changed ownership NA (i.e. difference is 1 or -1)
 ##ot10 <- ot10-ot17
 ##ot10 <- calc(ot10,fun = function(x) {x[x==-1|x==1]<- NA; return(x)}) #changed ownership
@@ -118,39 +115,96 @@ silvi1017<-filter(silvi,FY_PLANNED>"2010"&FY_PLANNED<"2016"&REGION_CODE=="03")
 
 #JOIN AGB TO OWNERSHIP FEATURE CLASS
 #change to polygon format, convert to sf
-ot_sf <- st_as_sf(rasterToPolygons(ot_10,na.rm=TRUE)) #didn't dissolve to save memory
+ot_sf <- st_as_sf(rasterToPolygons(ot10,na.rm=TRUE)) #didn't dissolve to save memory
 #assign agb change values to ownership
-own_agb <- mutate(ot_sf,agbchange=extract(change,ot_poly))
+master <- mutate(ot_sf,agbchange=exact_extract(change,
+                                                 ot_sf,
+                                                 'mean'))
+master$delagb <- round(master$agbchange,digits=0)
+                                              
 
-master <- own_agb
 #JOIN ALL ACTIVITIES TO MASTER FEATURE CLASS
-#generate 0s for activity variables
-master['nepa'] <- 0
-master['tsale'] <- 0
+#generate 0s for activity variables [some activities never occurred in 2010-2017 in region 3]
+#master['nepa'] <- 0
+#master['tsale'] <- 0
 master['coll'] <- 0
 master['haz'] <- 0
 master['hfra']<- 0
 master['rangi'] <- 0
-master['silvi'] <- 0
+#master['silvi'] <- 0
 
 #if activity intersects, assign value of 1
-master <- for (i in 1:nrow(master)) {
-  if (lengths(st_intersects(master, nepa1017)[i])>0) {
-    master$nepa[i] <- 1
+#convert to matching CRS
+master <- st_transform(master,crs=st_crs(nepa1017))
+
+intersect <- lengths(st_intersects(master, coll1017))
+for (i in 1:nrow(master)) {
+  if (intersect[i]>0) {
+    master$coll[i] <- 1
   } }
 
+sf::sf_use_s2(FALSE) #fix issue with spherical coords
+intersect <- lengths(st_intersects(master, haz1017))
+for (i in 1:nrow(master)) {
+  if (intersect[i]>0) {
+    master$haz[i] <- 1
+  } }
+
+intersect <- lengths(st_intersects(master, hfra1017))
+for (i in 1:nrow(master)) {
+  if (intersect[i]>0) {
+    master$hfra[i] <- 1
+  } }
+
+intersect <- lengths(st_intersects(master, rangi1017))
+for (i in 1:nrow(master)) {
+  if (intersect[i]>0) {
+    master$rangi[i] <- 1
+  } }
+
+library(rsample)      # data splitting 
+library(randomForest) # basic implementation
+library(ranger)       # a faster implementation of randomForest
+library(caret)        # an aggregator package for performing many machine learning models
+library(h2o)          # an extremely fast java-based platform
 
 #CREATE REGRESSION USING RF
+#create training and test set
+set.seed(123)
+#create columns of train vs. test
+train_test <- sample(c(rep(0, 0.7 * nrow(master)), rep(1, 0.3 * nrow(master))))
+train <- master[train_test == 0,]
+traind = traind[!(is.na(traind$layer)),]
+traind = traind[!(is.na(train$agbchange)),]
+traind = traind[!(is.na(traind$coll)),]
+traind = traind[!(is.na(traind$haz)),]
+traind = traind[!(is.na(traind$rangi)),]
+traind = traind[!(is.na(traind$delagb)),]
 
+drop <- c("delagb","agbchange")
+traind <- traind[,!(names(train) %in% drop)]
+traind <- st_drop_geometry(traind)
+resp <- as.factor(train$delagb)
+test <- master[train_test == 1,]
+testd <- test[,!(names(train) %in% drop)]
+test_resp <- as.factor(test$delagb)
+
+#adjust memory to include 100GB on hard drive
+memory.limit(100000)
+#input to model
+m1 <- randomForest(
+  traind, y= resp
+)
+rank <- importance(m1)
 
 #TEST REGRESSION 
-
-
 #GENERATE FUTURE SCENARIO PREDICTIONS
 
+# FURTHER STEPS for agb_ownership.R:
+# Ideally, would check for passing AGB data for passing quality assurance
 
-
-#Ideally, would check for passing AGB data for passing quality assurance
+# ## denotes that this would be needed to check 2017 ownership data as well;
+# experienced issues with matching crs/extent of 2017 ownership data, so just used 2010
 
 
 
