@@ -9,7 +9,6 @@ library(sf) # package for geospatial df manipulation
 library(geojsonR) #package for geoJSON
 library(dplyr) #for data manipulation
 library(exactextractr)
-library(tictoc)
 #set wd
 setwd("~/1.00/finalproject_100/")
 
@@ -59,7 +58,7 @@ par(mar = c(1, 1, 1, 1))
 pal <- colorRampPalette(c("red","green"))
 plot(change,col=pal(3), main ="Aboveground Biomass Change 2010-2017")
 
-
+tic()
 #PREP OWNERSHIP DATA
 # Crop and resample extents to match + remove NAs
 own10c <- crop(own_10, extent(-1500000,-1150000,1170000,1500000))
@@ -104,6 +103,7 @@ haz1017<-filter(haz,FISCAL_YEAR_COMPLETED>"2010-01-01"&FISCAL_YEAR_COMPLETED<"20
 
 hfra$LATEST_REVISION_DATE <- as.Date(hfra$LATEST_REVISION_DATE)
 hfra1017<-filter(hfra,LATEST_REVISION_DATE>"2010-01-01"&LATEST_REVISION_DATE<"2017-01-01")
+crs(change)
 #extent not cropped
 
 rangi$DATE_COMPLETED <- as.Date(rangi$DATE_COMPLETED)
@@ -150,31 +150,64 @@ for (i in 1:nrow(master)) {
     master$haz[i] <- 1
   } }
 
-intersect <- lengths(st_intersects(master, hfra1017))
-for (i in 1:nrow(master)) {
-  if (intersect[i]>0) {
-    master$hfra[i] <- 1
-  } }
+#intersect <- lengths(st_intersects(master, hfra1017))
+#for (i in 1:nrow(master)) {
+ # if (intersect[i]>0) {
+#    master$hfra[i] <- 1
+#  } }
 
 intersect <- lengths(st_intersects(master, rangi1017))
 for (i in 1:nrow(master)) {
   if (intersect[i]>0) {
     master$rangi[i] <- 1
   } }
-
+toc()
+#BUILD RF MODEL
 library(rsample)      # data splitting 
 library(randomForest) # basic implementation
 library(ranger)       # a faster implementation of randomForest
 library(caret)        # an aggregator package for performing many machine learning models
 library(h2o)          # an extremely fast java-based platform
 
-#CREATE REGRESSION USING RF
-#create training and test set
+#PREP DATA AND CREATE MODEL
+#Prep for linear regression
+masterd = master[!(is.na(master$layer)),]
+drop <- c("agbchange")
+masterd <- masterd[,!(names(masterd) %in% drop)]
+masterd = masterd[!(is.na(masterd$coll)),]
+masterd = masterd[!(is.na(masterd$haz)),]
+masterd = masterd[!(is.na(masterd$rangi)),]
+masterd = masterd[!(is.na(masterd$delagb)),]
+
+t2df <- data.frame(masterd$layer)
+t2df$delagb <- masterd$delagb
+t2df$coll <- masterd$coll
+t2df$haz <- masterd$haz
+t2df$rangi <- masterd$rangi
+colnames(t2df)=c("own","delagb","coll","haz","rangi")
+m2<-lm(delagb ~ own+coll+haz+rangi, 
+       data = t2df)
+summary(m2)
+
+#Plot conditional density based on predictions vs. actual
+predictions <- predict(m2)
+y<-t2df$delagb
+col <- as.factor(predictions)
+bm <- as.factor(y)
+cdplot(bm~col)
+
+#Ownership -> positive; 99% significant
+#Range Vegetation Improvement -> negative; 99% significant
+#Collaborative -> negative; not significant
+#Hazardous fuel treatment -> negative; 99%
+
+#Try RandomForests
+#create training and test set for randomForests
 set.seed(123)
 #create columns of train vs. test
 train_test <- sample(c(rep(0, 0.7 * nrow(master)), rep(1, 0.3 * nrow(master))))
 train <- master[train_test == 0,]
-traind = traind[!(is.na(traind$layer)),]
+traind = train[!(is.na(train$layer)),]
 traind = traind[!(is.na(train$agbchange)),]
 traind = traind[!(is.na(traind$coll)),]
 traind = traind[!(is.na(traind$haz)),]
@@ -197,8 +230,6 @@ m1 <- randomForest(
 )
 rank <- importance(m1)
 
-#TEST REGRESSION 
-#GENERATE FUTURE SCENARIO PREDICTIONS
 
 # FURTHER STEPS for agb_ownership.R:
 # Ideally, would check for passing AGB data for passing quality assurance
