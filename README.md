@@ -1,8 +1,6 @@
 # finalproject_100
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=X0aIhfBREj8
-" target="_blank"><img src="http://img.youtube.com/vi/X0aIhfBREj8/0.jpg" 
-alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/rTOjWAlb5kQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 Visit https://lcchen3.github.io/FinalProject100/ for high-level explanation of the analysis and process.
 
