@@ -1,6 +1,9 @@
 # Import, manipulate, and prepare data for RF regression analysis 
 # Response variable: Change in AGB 2010-2017; Predictors: Ownership (public/private); management activities
 
+
+load("C:/Users/laura/Desktop/1.00/finalproject_100/agb_analysis.RData")
+
 #LOAD LIBRARIES
 library(rgdal) # package for geospatial analysis
 library(ggplot2) # package for plotting
@@ -9,6 +12,7 @@ library(sf) # package for geospatial df manipulation
 library(geojsonR) #package for geoJSON
 library(dplyr) #for data manipulation
 library(exactextractr)
+library(tictoc)
 #set wd
 setwd("~/1.00/finalproject_100/")
 
@@ -133,6 +137,8 @@ master['hfra']<- 0
 master['rangi'] <- 0
 #master['silvi'] <- 0
 
+#avoid spherical geometry issue
+sf::sf_use_s2(FALSE)
 #if activity intersects, assign value of 1
 #convert to matching CRS
 master <- st_transform(master,crs=st_crs(nepa1017))
@@ -162,7 +168,35 @@ for (i in 1:nrow(master)) {
     master$rangi[i] <- 1
   } }
 toc()
-#BUILD RF MODEL
+#write GeoJSON file
+st_write(master, 
+         dsn = "mapdata.GeoJSON", layer = "mapdata.GeoJSON", driver = "GeoJSON")
+
+#check how many public to be converted to private for 2% increase AGB
+inc_pri <- nrow(t2df)*0.02/0.097
+area_pri <- 30*30*inc_pri*0.000247105 #conv to area in acres
+
+#check how much HFT can affect overall AGB
+count <- 0
+for (i in 1:nrow(master)) {
+  if (master$haz[i]==1) {
+    count = count + 1
+  }
+}
+dec_haz <- (count*0.237)/nrow(t2df)
+hazimpact <- count*.237*30*30*0.000247105
+
+
+#check how much RVI can affect overall AGB
+count <- 0
+for (i in 1:nrow(master)) {
+  if (master$rangi[i]==1) {
+    count = count + 1
+  }
+}
+dec_rvi <- (count*.107)/nrow(t2df)
+rviimpact <- count*.107*30*30*0.000247105
+
 library(rsample)      # data splitting 
 library(randomForest) # basic implementation
 library(ranger)       # a faster implementation of randomForest
@@ -201,6 +235,8 @@ cdplot(bm~col)
 #Collaborative -> negative; not significant
 #Hazardous fuel treatment -> negative; 99%
 
+
+#BUILD RF MODEL
 #Try RandomForests
 #create training and test set for randomForests
 set.seed(123)
@@ -230,12 +266,91 @@ m1 <- randomForest(
 )
 rank <- importance(m1)
 
-
-# FURTHER STEPS for agb_ownership.R:
+# FURTHER STEPS for data analysis in agb_ownership.R:
 # Ideally, would check for passing AGB data for passing quality assurance
 
 # ## denotes that this would be needed to check 2017 ownership data as well;
 # experienced issues with matching crs/extent of 2017 ownership data, so just used 2010
 
+# MAPPING IN LEAFLET
+library(leaflet)
+library(mapview)
+library(geojsonio)
+library(rmapshaper)
+library(sp)
+
+memory.limit(100000)
+#import as sp object and simplify geometry to reduce memory use
+data <- geojsonio::geojson_read("mapdata.geojson", what = "sp")
+tic()
+simp_data <- ms_simplify(data,sys=TRUE)
+toc()
+
+#AGB change map
+tic()
+bins = c(1, 2, 3)
+pal <- colorBin("BuPu", domain = data$delagb, bins = bins)
+mymap <- leaflet(data) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  setView(lng = -111.2604, lat = 33.8885, zoom = 12)
+mymap %>% addPolygons(
+  fillColor = ~pal(delagb),
+  weight = 1,
+  opacity = 1,
+  color = 'white',
+  dashArray = "3",
+  fillOpacity = 0.8
+) %>%
+  addLegend(
+    pal = pal, 
+    values = ~delagb, 
+    opacity = 0.8,
+    title = "Change in AGB",
+    position = "bottomright")
+mymap
+toc()
+
+#Save image
+library(mapview)
+mapshot(map1, file = "~/map_own.png")
 
 
+##OLD
+map1 <- leaflet() %>%
+  setView(35.0844, -106.6504, 10) %>%
+  addProviderTiles(providers$OpenStreetMap)
+    #"MapBox", options = providerTileOptions(
+    #id = "mapbox.light",
+    #accessToken = Sys.getenv('pk.eyJ1IjoibGNjaGVuMyIsImEiOiJja3pmMTg0YXAzZGV5Mm9ueDNocW1ncmE0In0.MYIwufjOy78sgrrLXbBB3g')))
+map1 %>% addPolygons()
+map1 %>% addPolygons(
+    fillColor = ~pal(delagb),
+    weight = 1,
+    opacity = 1,
+    color = 'white',
+    dashArray = "3",
+    fillOpacity = 0.8
+  ) %>%
+  addLegend(
+    pal = pal, 
+    values = ~delagb, 
+    opacity = 0.8,
+    title = "Change in AGB",
+    position = "bottomright")
+map1
+toc()
+save.image(file = "agb_analysis.RData")
+
+library(mapview)
+
+mapshot(map1, file = "~/map_own.png")
+
+## 'mapview' objects (image below)
+m2 <- mapview(breweries91)
+mapshot(m2, file = "~/breweries.png")
+
+#Code 
+library(ggmap)
+ourBasemap <- get_stamenmap() 
+ourGgmap <- ggmap(ourBasemap) 
+ourGgmap
