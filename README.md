@@ -1,7 +1,7 @@
 # finalproject_100
 
-<a href="http://www.youtube.com/watch?feature=player_embedded&v=rTOjWAlb5kQ
-" target="_blank"><img src="http://img.youtube.com/vi/rTOjWAlb5kQ/0.jpg" 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=l893ImHy4X0
+" target="_blank"><img src="http://img.youtube.com/vi/l893ImHy4X0/0.jpg" 
 alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 
 Visit https://lcchen3.github.io/FinalProject100/ for high-level explanation of the analysis and process.
