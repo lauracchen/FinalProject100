@@ -13,7 +13,7 @@ Takes in AGB and ownership GeoTIFF raster data and forest activity GeoJSON data.
 Produces chloropleth plots from sf objects by reading in the geoJSON created by agb_ownership. These can be exported as images or PDFs.
 
 <b> index.html </b>
-Supports summary webpage/user interface using edited Bootstrap Carousel example template.
+Supports summary webpage/user interface using edited Bootstrap Carousel example template. The site branch hosts the images and index file necessary to host the webpage on Github pages.
 
 Install packages by:
 install.packages("PACKAGE NAME") in the terminal
