@@ -19,16 +19,42 @@ Install packages by:
 install.packages("PACKAGE NAME") in the terminal
 
 Packages required:
-sf # package for geospatial df manipulation
-geojsonio # package used in mapping script
-ggplot2 # package used in mapping script
-sp # package used in mapping script
-RColorBrewer # package used in mapping script
-rgdal # package for geospatial analysis
-ggplot2 # package for plotting
-raster # package for raster manipulation
-geojsonR #package for geoJSON
-dplyr #for data manipulation
-exactextractr #for faster value extraction via C++
-tictoc #checking run time
+<ul>
+  <li>
+    sf # package for geospatial df manipulation
+  </li>
+  <li>
+    geojsonio # package used in mapping script
+  </li>
+  <li>
+    ggplot2 # package used in mapping script
+  </li>
+  <li>
+    sp # package used in mapping script
+  </li>
+  <li>
+    RColorBrewer # package used in mapping script
+   </li>
+   <li>
+    rgdal # package for geospatial analysis
+   </li>
+   <li>
+    ggplot2 # package for plotting
+   </li>
+   <li>
+    raster # package for raster manipulation
+   </li>
+   <li>
+    geojsonR #package for geoJSON
+   </li>
+   <li>
+    dplyr #for data manipulation
+   </li>
+   <li>
+    exactextractr #for faster value extraction via C++
+   </li>
+   <li>
+    tictoc #checking run time
+   </li>
+ </ul>
 
