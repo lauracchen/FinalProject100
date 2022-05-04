@@ -15,6 +15,12 @@ Produces chloropleth plots from sf objects by reading in the geoJSON created by 
 <b> index.html </b>
 Supports summary webpage/user interface using edited Bootstrap Carousel example template. The site branch hosts the images and index file necessary to host the webpage on Github pages.
 
+Data:
+USFS activities - https://data.fs.usda.gov/geodata/edw/datasets.php
+Forest AGB 2000-2021 - https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1978
+Ownership 2010 - https://www.fs.usda.gov/rds/archive/Catalog/RDS-2010-0002
+Ownership 2017 - https://www.fs.usda.gov/rds/archive/Catalog/RDS-2020-0044
+
 Install packages by:
 install.packages("PACKAGE NAME") in the terminal
 
