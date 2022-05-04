@@ -4,38 +4,21 @@ library(mapview)
 library(geojsonio)
 library(rmapshaper)
 library(sp)
+library(sf)
+library(tictoc)
+library(ggplot2)
+library(RColorBrewer)
 
-memory.limit(100000)
-#import as sp object and simplify geometry to reduce memory use
+#import as sp object, then sf
 data <- geojsonio::geojson_read("mapdata.geojson", what = "sp")
-tic()
-simp_data <- ms_simplify(data,sys=TRUE)
-toc()
+mapdata <- st_as_sf(mdata)
 
-#AGB change map
-tic()
-bins = c(1, 2, 3)
-pal <- colorBin("BuPu", domain = data$delagb, bins = bins)
-mymap <- leaflet(data) %>%
-  addProviderTiles(providers$CartoDB.Positron) %>%
-  setView(lng = -111.2604, lat = 33.8885, zoom = 12)
-mymap %>% addPolygons(
-  fillColor = ~pal(delagb),
-  weight = 1,
-  opacity = 1,
-  color = 'white',
-  dashArray = "3",
-  fillOpacity = 0.8
-) %>%
-  addLegend(
-    pal = pal, 
-    values = ~delagb, 
-    opacity = 0.8,
-    title = "Change in AGB",
-    position = "bottomright")
-mymap
-toc()
-
-#Save image
-library(mapview)
-mapshot(map1, file = "~/map_own.png")
+# Center on Young, AZ near Tonto Forest lng = -111.0875, lat = 34.1066
+box <- c(xmin = -112.0875, xmax = -110.0875, ymin = 33.1046, ymax = 35.1066)
+young <- st_crop(mapdata,box)
+pal <- brewer.pal(3,"RdYlGn")
+plot(young[,"delagb"],
+     lty=3,
+     lwd=0.00001,
+     border= NA,
+     pal = pal)
