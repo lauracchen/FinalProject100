@@ -17,6 +17,15 @@ Supports summary webpage/user interface using edited Bootstrap Carousel example 
 
 Data:
 USFS activities - https://data.fs.usda.gov/geodata/edw/datasets.php
+  Download shapefiles of:
+  Activity Range Vegetation Improvement
+  Silviculture Timber Stand Improvement
+  Hazardous Fuel Treatment Reduction: Polygon
+  Collaborative Forest Landscape Restoration Program: Polygon
+  Healthy Forest Restoration Act Activities
+  Timber Sale
+  NEPA
+
 Forest AGB 2000-2021 - https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=1978
 Ownership 2010 - https://www.fs.usda.gov/rds/archive/Catalog/RDS-2010-0002
 Ownership 2017 - https://www.fs.usda.gov/rds/archive/Catalog/RDS-2020-0044
