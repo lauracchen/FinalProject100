@@ -4,7 +4,7 @@
 " target="_blank"><img src="http://img.youtube.com/vi/l893ImHy4X0/0.jpg" 
 alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
 
-Visit https://lcchen3.github.io/FinalProject100/ for high-level explanation of the analysis and process.
+Visit https://lauracchen125.github.io/FinalProject100/ for high-level explanation of the analysis and process.
 
 <b> agb_ownership.R </b>
 Takes in AGB and ownership GeoTIFF raster data and forest activity GeoJSON data. Produces conditional density plots for initial relationship examination, linear regression, and Random Forests models. Outputs mapdata.GeoJSON, which has ownership ("layer), activity, and change in AGB data ("delagb") for 30mx30m polygons in forests spanning from Arizona to New Mexico.
